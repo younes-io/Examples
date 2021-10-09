@@ -1,4 +1,11 @@
 -------------------------- MODULE Single_Lane_Bridge --------------------------
+
+\* A bridge over a river is only wide enough to permit a single lane of traffic.
+\* Consequently, cars can only move concurrently if they are moving in the same 
+\* direction. A safety violation occurs if two cars moving in different directions
+\* enter the bridge at the same time.
+\* To visualize the problem, refer to https://flylib.com/books/en/2.752.1.48/1/
+
 EXTENDS Naturals, FiniteSets, Sequences
 
 CONSTANTS CarsRight, CarsLeft, Bridge, Positions 
@@ -11,10 +18,13 @@ Cars == CarsRight \union CarsLeft
 CarsInBridge == { c \in Cars : Location[c] \in Bridge }
 
 StartBridge == CHOOSE min \in Bridge : \A e \in Bridge : min <= e
-EndBridge == CHOOSE max \in Bridge : \A e \in Bridge : max >= e
+EndBridge   == CHOOSE max \in Bridge : \A e \in Bridge : max >= e
 
-RMove(pos) == IF pos > 1 THEN pos - 1 ELSE 8
-LMove(pos) == IF pos < 8 THEN pos + 1 ELSE 1
+StartPos == CHOOSE min \in Positions : \A p \in Positions : min <= p
+EndPos   == CHOOSE max \in Positions : \A p \in Positions : max >= p
+
+RMove(pos) == IF pos > StartPos THEN pos - 1 ELSE EndPos
+LMove(pos) == IF pos < EndPos THEN pos + 1 ELSE StartPos
 
 NextLocation(car) == IF car \in CarsRight THEN RMove(Location[car]) ELSE LMove(Location[car])
 
@@ -29,8 +39,8 @@ HaveSameDirection(car) ==
     \/ car \in CarsRight /\ \A c \in CarsInBridge : c \in CarsRight
     \/ car \in CarsLeft /\ \A c \in CarsInBridge : c \in CarsLeft
 
-\*Actions
-Move(car) ==
+\* Actions
+MoveOutsideBridge(car) ==
     /\ NextLocation(car) \notin Bridge
     /\ ChangeLocation(car)
 
@@ -53,13 +63,13 @@ EnterBridge ==
 
 
 Init == 
-    /\ Location = [ c \in Cars |-> IF c \in CarsRight THEN 8 ELSE 1  ]
+    /\ Location = [ c \in Cars |-> IF c \in CarsRight THEN EndPos ELSE StartPos  ]
     /\ Waiting = <<>>
 
-Next == \E car \in Cars : EnterBridge \/ Move(car) \/ MoveInsideBridge(car)
+Next == \E car \in Cars : EnterBridge \/ MoveOutsideBridge(car) \/ MoveInsideBridge(car)
 
 Fairness ==
-    /\ \A car \in Cars : WF_vars(Move(car))
+    /\ \A car \in Cars : WF_vars(MoveOutsideBridge(car))
     /\ \A car \in Cars : WF_vars(MoveInsideBridge(car))
     /\ \A car \in Cars : WF_vars(EnterBridge)
 
@@ -82,15 +92,15 @@ Invariants ==
     /\ \A <<r,l>> \in CarsRight \X CarsLeft :
         ~ (Location[r] \in Bridge /\ Location[l] \in Bridge) 
 
-THEOREM Invariants => []Spec
+THEOREM Spec => []Invariants
 
 CarsInBridgeExitBridge ==
     \* All cars eventually exit the Bridge 
-    \A car \in Cars : Location[car] \in Bridge ~> <> (Location[car] \notin Bridge)
+    \A car \in Cars : Location[car] \in Bridge ~> Location[car] \notin Bridge
 CarsEnterBridge ==
     \* All cars eventually enter the bridge
-    \A car \in Cars : Location[car] \notin Bridge ~> <> (Location[car] \in Bridge)
+    \A car \in Cars : Location[car] \notin Bridge ~> Location[car] \in Bridge
 
 =============================================================================
 \* Modification History
-\* Last modified Sun Mar 14 12:13:14 CET 2021 by oblic
+\* Last modified Sat Oct 09 18:03:11 CEST 2021 by youne
