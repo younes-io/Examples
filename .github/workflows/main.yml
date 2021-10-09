@@ -1,0 +1,116 @@
+name: CI
+
+on: [push]
+
+jobs:
+  build:
+    env:
+      TLC_COMMAND: java -Dtlc2.TLC.stopAfter=180 -Dtlc2.TLC.ide=Github -Dutil.ExecutionStatisticsCollector.id=abcdef60f238424fa70d124d0c77ffff -cp tla2tools.jar tlc2.TLC -workers auto -lncheck final -tool -deadlock
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: Get (nightly) TLC
+      run: wget https://nightly.tlapl.us/dist/tla2tools.jar
+    - name: Get (nightly) CommunityModules
+      run: wget https://github.com/tlaplus/CommunityModules/releases/latest/download/CommunityModules-deps.jar
+    - name: Check EWD840
+      run: ${{ env.TLC_COMMAND }} specifications/ewd840/EWD840
+    - name: Check CarTalkPuzzle Model_1
+      run: ${{ env.TLC_COMMAND }} specifications/CarTalkPuzzle/CarTalkPuzzle.toolbox/Model_1/MC
+    - name: Check CarTalkPuzzle Model_2
+      run: ${{ env.TLC_COMMAND }} specifications/CarTalkPuzzle/CarTalkPuzzle.toolbox/Model_2/MC
+    - name: Check MCDieHarder
+      run: ${{ env.TLC_COMMAND }} specifications/DieHard/MCDieHarder || (($? == 12))  ## Expect a safety violation
+    - name: Check DieHard
+      run: ${{ env.TLC_COMMAND }} specifications/DieHard/DieHard || (($? == 12))  ## Expect a safety violation
+    - name: Check DiningPhilosophers
+      run: ${{ env.TLC_COMMAND }} specifications/DiningPhilosophers/DiningPhilosophers
+    - name: Check TransitiveClosure
+      run: ${{ env.TLC_COMMAND }} specifications/TransitiveClosure/TransitiveClosure
+    - name: Check Hanoi
+      run: java -Dtlc2.TLC.stopAfter=600 -Dtlc2.TLC.ide=Github -Dutil.ExecutionStatisticsCollector.id=abcdef60f238424fa70d124d0c77ffff -cp tla2tools.jar:specifications/tower_of_hanoi/Hanoi.toolbox/Model_1/MC tlc2.TLC -workers auto -lncheck final -tool -deadlock specifications/tower_of_hanoi/Hanoi.toolbox/Model_1/MC
+    - name: Check MCEcho
+      run: ${{ env.TLC_COMMAND }} specifications/echo/MCEcho
+    - name: Check Prisoners
+      run: ${{ env.TLC_COMMAND }} specifications/Prisoners/Prisoners
+    - name: Check LSpec-model
+      run: ${{ env.TLC_COMMAND }} specifications/dijkstra-mutex/DijkstraMutex.toolbox/LSpec-model/MC
+    - name: Check Safety-4-processors
+      run: ${{ env.TLC_COMMAND }} specifications/dijkstra-mutex/DijkstraMutex.toolbox/Safety-4-processors/MC
+    ## This spec used to be accepted by Apalache, but since Apalache has started to require type annotations for all variables.
+    ## https://github.com/tlaplus/Examples/pull/31#issuecomment-796354291
+    # - name: Check EinsteinRiddle
+    #   run: ${{ env.TLC_COMMAND }} specifications/EinsteinRiddle/Einstein
+    - name: Check MCInnerSequential
+      run: ${{ env.TLC_COMMAND }} specifications/SpecifyingSystems/AdvancedExamples/MCInnerSequential
+    # - name: Check MCInnerSerial
+    #   run: ${{ env.TLC_COMMAND }} specifications/SpecifyingSystems/AdvancedExamples/MCInnerSerial
+    - name: Check MCLiveWriteThroughCache
+      run: ${{ env.TLC_COMMAND }} specifications/SpecifyingSystems/Liveness/MCLiveWriteThroughCache
+    - name: Check LiveHourClock
+      run: ${{ env.TLC_COMMAND }} specifications/SpecifyingSystems/Liveness/LiveHourClock
+    - name: Check MCLiveInternalMemory
+      run: ${{ env.TLC_COMMAND }} specifications/SpecifyingSystems/Liveness/MCLiveInternalMemory
+    - name: Check SimpleMath
+      run: ${{ env.TLC_COMMAND }} specifications/SpecifyingSystems/SimpleMath/SimpleMath
+    - name: Check HourClock2
+      run: ${{ env.TLC_COMMAND }} specifications/SpecifyingSystems/HourClock/HourClock2
+    - name: Check HourClock
+      run: ${{ env.TLC_COMMAND }} specifications/SpecifyingSystems/HourClock/HourClock
+    - name: Check MCInternalMemory
+      run: ${{ env.TLC_COMMAND }} specifications/SpecifyingSystems/CachingMemory/MCInternalMemory
+    - name: Check MCWriteThroughCache
+      run: ${{ env.TLC_COMMAND }} specifications/SpecifyingSystems/CachingMemory/MCWriteThroughCache
+    - name: Check PrintValues
+      run: ${{ env.TLC_COMMAND }} specifications/SpecifyingSystems/AsynchronousInterface/PrintValues
+    - name: Check AsynchInterface
+      run: ${{ env.TLC_COMMAND }} specifications/SpecifyingSystems/AsynchronousInterface/AsynchInterface
+    - name: Check Channel
+      run: ${{ env.TLC_COMMAND }} specifications/SpecifyingSystems/AsynchronousInterface/Channel
+    - name: Check MCAlternatingBit
+      run: ${{ env.TLC_COMMAND }} specifications/SpecifyingSystems/TLC/MCAlternatingBit
+    - name: Check ABCorrectness
+      run: ${{ env.TLC_COMMAND }} specifications/SpecifyingSystems/TLC/ABCorrectness
+    - name: Check MCRealTimeHourClock
+      run: ${{ env.TLC_COMMAND }} specifications/SpecifyingSystems/RealTime/MCRealTimeHourClock || (($? != 1))  ## Stuttering
+    - name: Check MCInnerFIFO
+      run: ${{ env.TLC_COMMAND }} specifications/SpecifyingSystems/FIFO/MCInnerFIFO
+    - name: Check EWD840_anim
+      run: ${{ env.TLC_COMMAND }} -simulate num=1 specifications/ewd840/EWD840_anim || (($? == 12))  ## Expect a safety violation
+    - name: Check SyncTerminationDetection
+      run: ${{ env.TLC_COMMAND }} specifications/ewd840/SyncTerminationDetection
+    - name: Check EWD840
+      run: ${{ env.TLC_COMMAND }} specifications/ewd840/EWD840
+    - name: Check EWD840_json
+      run: |
+        sed -i '/^SendMsg/{n;d;}' specifications/ewd840/EWD840.tla ## Cause RealInv to be violated (see EWD840_json.tla)
+        ${{ env.TLC_COMMAND }} specifications/ewd840/EWD840_json
+    - name: Check MCVoting
+      run: ${{ env.TLC_COMMAND }} specifications/Paxos/MCVoting
+    - name: Check MCConsensus
+      run: ${{ env.TLC_COMMAND }} specifications/Paxos/MCConsensus
+    - name: Check MCPaxos
+      run: ${{ env.TLC_COMMAND }} specifications/Paxos/MCPaxos
+    - name: Check EWD998ChanID
+      run: ${{ env.TLC_COMMAND }} specifications/ewd998/EWD998ChanID
+    - name: Check EWD998Chan
+      run: ${{ env.TLC_COMMAND }} specifications/ewd998/EWD998Chan
+    - name: Check EWD998
+      run: ${{ env.TLC_COMMAND }} specifications/ewd998/EWD998
+    - name: Check TestGraphs
+      run: ${{ env.TLC_COMMAND }} specifications/TLC/TestGraphs
+    - name: Check SchedulingAllocator
+      run: ${{ env.TLC_COMMAND }} specifications/allocator/SchedulingAllocator
+    - name: Check AllocatorRefinement
+      run: ${{ env.TLC_COMMAND }} specifications/allocator/AllocatorRefinement
+    - name: Check SimpleAllocator
+      run: ${{ env.TLC_COMMAND }} specifications/allocator/SimpleAllocator
+    - name: Check AllocatorImplementation
+      run: ${{ env.TLC_COMMAND }} specifications/allocator/AllocatorImplementation
+    - name: Check FourQueens
+      run: ${{ env.TLC_COMMAND }} specifications/N-Queens/Queens.toolbox/FourQueens/MC
+    - name: Check FourQueens PlusCal
+      run: ${{ env.TLC_COMMAND }} specifications/N-Queens/QueensPluscal.toolbox/FourQueens/MC
+    - name: Check ReadersWriters
+      run: ${{ env.TLC_COMMAND }} specifications/ReadersWriters/MC
+

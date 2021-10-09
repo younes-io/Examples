@@ -62,7 +62,7 @@ succ(n) == IF n=N THEN 1 ELSE n+1  \* successor along the ring
    } \* end process
 }  \* end algorithm
 **)
-\* BEGIN TRANSLATION
+\* BEGIN TRANSLATION (chksum(pcal) = "65c8d352" /\ chksum(tla) = "33951c89")
 VARIABLES msgs, pc, initiator, state
 
 vars == << msgs, pc, initiator, state >>
@@ -103,9 +103,12 @@ n1(self) == /\ pc[self] = "n1"
 
 node(self) == n0(self) \/ n1(self)
 
+(* Allow infinite stuttering to prevent deadlock on termination. *)
+Terminating == /\ \A self \in ProcSet: pc[self] = "Done"
+               /\ UNCHANGED vars
+
 Next == (\E self \in Node: node(self))
-           \/ (* Disjunct to prevent deadlock on termination *)
-              ((\A self \in ProcSet: pc[self] = "Done") /\ UNCHANGED vars)
+           \/ Terminating
 
 Spec == /\ Init /\ [][Next]_vars
         /\ \A self \in Node : WF_vars(node(self))
@@ -116,7 +119,7 @@ Termination == <>(\A self \in ProcSet: pc[self] = "Done")
 -----------------------------------------------------------------------------
 (* type correctness *)
 TypeOK ==
-  /\ pc \in [Node -> {"n0", "n1", "n2", "Done"}]
+  /\ pc \in [Node -> {"n0", "n1", "Done"}]
   /\ msgs \in [Node -> SUBSET {Id[n] : n \in Node}]
   /\ initiator \in [Node -> BOOLEAN]
   /\ state \in [Node -> {"cand", "lost", "won"}]
@@ -135,5 +138,6 @@ Correctness ==
 Liveness == (\E n \in Node : state[n] = "cand") => <>(\E n \in Node : state[n] = "won")
 =============================================================================
 \* Modification History
+\* Last modified Tue Apr 27 20:05:58 PDT 2021 by markus
 \* Last modified Sat Mar 24 10:00:11 CET 2018 by merz
 \* Created Sat Apr 23 14:05:31 CEST 2016 by merz

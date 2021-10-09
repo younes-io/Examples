@@ -1,6 +1,7 @@
 ------------------------------- CONFIG EWD998_anim -------------------------------
 CONSTANTS
     Node = {"a", "b", "c", "d", "e", "f"} 
+    RingOfNodes <- SomeRingOfNodes
 
 SPECIFICATION 
     Spec
@@ -13,7 +14,10 @@ INVARIANT
 ==================================================================================
 
 ------------------------------- MODULE EWD998_anim -------------------------------
-EXTENDS EWD998ChanID, SVG, TLC
+EXTENDS EWD998ChanID, SVG, TLC, IOUtils
+
+SomeRingOfNodes ==
+    SimpleCycle(Node)
 
 token == EWD998Chan!token
 tpos == EWD998Chan!tpos
@@ -39,7 +43,9 @@ TokenBasePos == [ w |-> RingBasePos.w + 12,
 Labels == Group(<<Text(LegendBasePos.x, LegendBasePos.y, "Circle: Active, Black: Tainted", Arial),
                   Text(LegendBasePos.x, LegendBasePos.y + 20, "Line: Message, Arrow: Receiver", Arial),
                   Text(LegendBasePos.x, LegendBasePos.y + 40, "Dashed: In-Flight, Solid: Arrival in next", Arial),
-                  Text(LegendBasePos.x, LegendBasePos.y + 60, "Level: " \o ToString(TLCGet("level")), Arial)>>,
+                  Text(LegendBasePos.x, LegendBasePos.y + 60, "Level: " \o ToString(TLCGet("level")) \o 
+                               " Terminated: " \o (IF EWD998Chan!EWD998!Termination THEN "T" ELSE "F") \o
+                               " Detected: " \o (IF EWD998Chan!EWD998!terminationDetected THEN "T" ELSE "F"), Arial)>>,
                   <<>>)
 
 ---------------------------------------------------------------------------
@@ -100,11 +106,43 @@ Defs ==
     "<defs><marker id='arrow' markerWidth='15' markerHeight='15' refX='0' refY='3' orient='auto' markerUnits='strokeWidth' viewBox='0 0 20 20'><path d='M0,0 L0,6 L9,3 z' fill='orange' /></marker></defs>"
 
 Alias == [ 
-    \* toolbox |-> Animation,
-    eyeofgnome |-> "<svg viewBox='-80 0 300 300'>" \o Defs \o Animation \o "</svg>"
+    toolbox |-> Defs \o Animation,
+    eyeofgnome |-> "<svg viewBox='-80 0 300 300'>" \o Defs \o Animation \o "</svg>",
+    toSVG |-> 
+        IOExecTemplate(
+            \* %%03d to escape %03d in Java format strings.
+            <<"bash", "-c", "echo \"%1$s\" > EWD998_anim_$(printf %%03d %2$s).svg">>,
+                <<"<svg viewBox='-40 15 330 290'>"
+                    \o Defs
+                    \o Animation
+                    \o "</svg>", ToString(TLCGet("level"))>>)
     ]
 
 ---------------------------------------------------------------------------
+
+AnimSpec ==
+    \* AnimSpec constraints the set of initial states to a set of states,
+    \* s.t. all nodes are inactive but have sent or received a message.
+    \* The sum of all counters is zero.  The token is at the Initiator.
+    \* The next-state relation does not permit environment (sub-) actions.
+    \* Replacing Spec with AnimSpec above, TLC can generate traces for large
+    \* numbers of nodes.
+    /\ active = [ n \in Node |-> FALSE ]
+    /\ color = [ n \in Node |-> "black" ]
+    /\ counter = [n \in Node |-> IF Cardinality(Node) % 2 = 0
+                                 THEN IF node2nat[n] % 2 = 0 
+                                      THEN 1
+                                      ELSE -1
+                                 ELSE IF n # Initiator 
+                                      THEN IF node2nat[n] % 2 = 0
+                                           THEN 1
+                                           ELSE -1
+                                      ELSE 0 ]
+    /\ inbox = [n \in Node |-> IF n  = Initiator \* RingOfNodes[Initiator] 
+                              THEN << [type |-> "tok", q |-> 0, color |-> "black" ] >> 
+                              ELSE <<>>] \* with empty channels.
+    /\ Init!5
+    /\ [][\E n \in Node: System(n)]_vars
 
 \* Property that leads to interesting traces when animated.
 
@@ -116,7 +154,7 @@ AnimInv == EWD998Chan!EWD998!terminationDetected => TLCGet("level") < 20
 ## installed to /opt/toolbox.  On macOS, install gawk with `brew install gawk` 
 ## (default nawk does not like the match).
 
-/opt/toolbox/tla2tools.jar -simulate -noGenerateSpecTE EWD998_anim | gawk 'match($0,/<svg.*<\/svg>/) { n += 1; print substr($0,RSTART,RLENGTH) > sprintf("%03d", n) ".svg" }' && eog .
+/opt/toolbox/tla2tools.jar -simulate -noGenerateSpecTE -config EWD998_anim.tla EWD998_anim | gawk 'match($0,/<svg.*<\/svg>/) { n += 1; print substr($0,RSTART,RLENGTH) > sprintf("%03d", n) ".svg" }' && eog .
 
 
 ## The best viewer for a stack of SVGs is Gnome's Eye Of Gnome (eog) that
@@ -132,4 +170,4 @@ AnimInv == EWD998Chan!EWD998!terminationDetected => TLCGet("level") < 20
 ## In this case, a slightly different awk matching is needed.  Optionally, pipe
 ## output of awk directly to xclip to send it to the clipboard ("| xclip").
 
-/opt/toolbox/tla2tools.jar -simulate EWD998_anim | gawk 'match($0,/toolbox = .*/) { print "[\ntb |->" substr($0, RSTART+9, RLENGTH) "\n]," }'
+/opt/toolbox/tla2tools.jar -simulate -noGenerateSpecTE -config EWD998_anim.tla EWD998_anim | gawk 'match($0,/toolbox = .*/) { print "[\ntb |->" substr($0, RSTART+9, RLENGTH) "\n]," }'

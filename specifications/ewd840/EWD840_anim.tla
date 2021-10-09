@@ -200,7 +200,7 @@ for i in *.svg; do inkscape -w 1920 -h 1920 -b lightyellow --export-png=$i.png $
 ## - https://bugs.launchpad.net/inkscape/+bug/1577763
 
 ## Render the sequence of pngs into an mp4 with two frames per second. 
-ffmpeg -r 2 -y -i %d.svg.png EWD840.mp4
+ffmpeg -r 2 -y -i %03d.svg.png EWD840.mp4
 
 
 ## https://stackoverflow.com/a/25002372/6291195 partially gets the job done of

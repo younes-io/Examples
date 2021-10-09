@@ -1,0 +1,31 @@
+{
+  // Install TLA+ and GraphViz extension
+  "extensions": [
+    "alygin.vscode-tlaplus",
+    "tintinweb.graphviz-interactive-preview",
+    "cssho.vscode-svgviewer",
+    "tomoki1207.pdf"
+  ],
+
+  // Use Java GC that works best with TLC.
+  // https://github.com/alygin/vscode-tlaplus/wiki/Automatic-Module-Parsing
+  "settings": {
+    "editor.minimap.enabled": false,
+    "tlaplus.tlc.statisticsSharing": "share",
+    "tlaplus.java.options": "-XX:+UseParallelGC",
+    "[tlaplus]": {"editor.codeActionsOnSave": {"source": true} }
+  },
+
+  // The location of a Dockerfile that defines the contents of the container.
+  // The path is relative to the devcontainer.json file. 
+  // https://code.visualstudio.com/docs/remote/devcontainerjson-reference
+  "build": {
+    "dockerfile": "../.gitpod.Dockerfile",
+  },
+
+  // The username of the user used in the above "dockerfile" image
+  "remoteUser": "gitpod",
+
+  // Install htop and graphviz (to visualize TLC state graphs) and git shorthands to reduce typing in presentations.
+  "postCreateCommand": "git config --global alias.slog 'log --pretty=oneline --abbrev-commit' && git config --global alias.co checkout"
+}

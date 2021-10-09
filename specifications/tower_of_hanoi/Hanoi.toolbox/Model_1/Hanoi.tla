@@ -89,7 +89,7 @@ Move(from, to, disk) == /\ CanMoveOff(towers[from], disk)
 Next == \E d \in SetOfPowerOfTwo(D): \E idx1, idx2 \in DOMAIN towers: 
             /\ idx1 # idx2 \* No need to try to move onto the same tower (Move(...) prevents it too)
             /\ Move(idx1, idx2, d)
-	
+    
 (***************************************************************************)
 (* We define the formula Spec to be the complete specification, asserting  *)
 (* of a behavior that it begins in a state satisfying Init, and that every *)

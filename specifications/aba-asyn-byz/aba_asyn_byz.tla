@@ -66,12 +66,14 @@ BecomeByzantine(i) ==
   /\ pc' = [ pc EXCEPT ![i] = "BYZ" ]  
   /\ UNCHANGED << nSntE, nSntR, nRcvdE, nRcvdR >>
 
-(* Process i receives a new message. *)  
-Receive(i) ==
-  \/ /\ nRcvdE[i] < nSntE + nByz
+(* Process i receives a new message. If includeByz is TRUE, then messages from both   *)
+(* correct and Byzantine processes are considered. Otherwise, only messages from      *)
+(* correct processes are considered.                                                  *)
+Receive(i, includeByz) ==
+  \/ /\ nRcvdE[i] < nSntE + (IF includeByz THEN nByz ELSE 0)
      /\ nRcvdE' = [ nRcvdE EXCEPT ![i] = nRcvdE[i] + 1 ]
      /\ UNCHANGED << nSntE, nSntR, nRcvdR, nByz, pc >>     
-  \/ /\ nRcvdR[i] < nSntR + nByz
+  \/ /\ nRcvdR[i] < nSntR + (IF includeByz THEN nByz ELSE 0)
      /\ nRcvdR' = [ nRcvdR EXCEPT ![i] = nRcvdR[i] + 1 ]
      /\ UNCHANGED << nSntE, nSntR, nRcvdE, nByz, pc >>      
   \/ /\ UNCHANGED vars 
@@ -110,26 +112,24 @@ Decide(i) ==
 Next == 
   /\ \E self \in Proc : 
           \/ BecomeByzantine(self)
-          \/ Receive(self) 
+          \/ Receive(self, TRUE) 
           \/ SendEcho(self) 
           \/ SendReady(self)
           \/ Decide(self)    
           \/ UNCHANGED vars                
 
 (* Add weak fairness condition since we want to check liveness properties.  *)
-(* We require that if UponV1 (UponNonFaulty, UponAcceptNotSent, UponAccept) *)
-(* ever becomes forever enabled, then this step must eventually occur.      *)
 Spec == Init /\ [][Next]_vars 
-             /\ WF_vars(\E self \in Proc : \/ Receive(self)
+             /\ WF_vars(\E self \in Proc : \/ Receive(self, FALSE)
                                            \/ SendEcho(self)
                                            \/ SendReady(self)
                                            \/ Decide(self))
                                            
 Spec0 == Init0 /\ [][Next]_vars 
-               /\ WF_vars(\E self \in Proc : \/ Receive(self)
-                                           \/ SendEcho(self)
-                                           \/ SendReady(self)
-                                           \/ Decide(self))                                           
+               /\ WF_vars(\E self \in Proc : \/ Receive(self, FALSE)
+                                             \/ SendEcho(self)
+                                             \/ SendReady(self)
+                                             \/ Decide(self))                                           
 
 TypeOK == 
   /\ pc \in [ Proc -> Location ]          

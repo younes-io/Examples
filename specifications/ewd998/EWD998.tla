@@ -130,7 +130,7 @@ terminationDetected ==
 (***************************************************************************)
 (* The number of messages on their way. "in-flight"                        *)
 (***************************************************************************)
-B == Reduce(sum, pending, 0, N-1, 0)
+B == FoldFunction(+, 0, pending)
 
 (***************************************************************************)
 (* The system has terminated if no node is active and there are no         *)
@@ -147,15 +147,15 @@ TerminationDetection ==
 (* Safra's inductive invariant                                             *)
 (***************************************************************************)
 Inv == 
-  /\ P0:: B = Reduce(sum, counter, 0, N-1, 0)
+  /\ P0:: B = FoldFunction(+, 0, counter)
      (* (Ai: t < i < N: machine nr.i is passive) /\ *)
      (* (Si: t < i < N: ci.i) = q *)
   /\ \/ P1:: /\ \A i \in (token.pos+1)..N-1: ~ active[i] \* machine nr.i is passive
              /\ IF token.pos = N-1 
                 THEN token.q = 0 
-                ELSE token.q = Reduce(sum, counter, (token.pos+1), N-1, 0)
+                ELSE token.q = FoldFunctionOnSet(+, 0, counter, (token.pos+1..N-1))
      (* (Si: 0 <= i <= t: c.i) + q > 0. *)
-     \/ P2:: Reduce(sum, counter, 0, token.pos, 0) + token.q > 0
+     \/ P2:: FoldFunctionOnSet(+, 0, counter, 0..token.pos) + token.q > 0
      (* Ei: 0 <= i <= t : machine nr.i is black. *)
      \/ P3:: \E i \in 0..token.pos : color[i] = "black"
      (* The token is black. *)
