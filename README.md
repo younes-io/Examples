@@ -93,7 +93,7 @@ Do you have your own case study that you like to share with the community? Send 
 | 79 | TLA+ Level Checking | <a href="https://github.com/tlaplus/Examples/tree/master/specifications/LevelChecking">Level-checking of TLA+ formulas as described in Specifying Systems</a> | Leslie Lamport | | | Integers, Sequences |  |
 | 80 | CRDT-Bug | <a href="https://github.com/Alexander-N/tla-specs/tree/main/crdt-bug">CRDT algorithm with defect and fixed version</a> | Alexander Niederbühl | | &#10004; | FiniteSets, Naturals, Sequences |  |
 | 81 | asyncio-lock | <a href="https://github.com/Alexander-N/tla-specs/tree/main/asyncio-lock">Bugs from old versions of Python's asyncio lock</a> | Alexander Niederbühl | | &#10004; | Sequences |  |
-| 82 | Single Lane Bridge problem | <a href="https://github.com/tlaplus/Examples/tree/master/specifications/SingleLaneBridge">Single Lane Bridge</a> | Younes Akhouayri |   | &#10004; | Naturals, FiniteSets, Sequences | &#10004; |
+| 82 | Single Lane Bridge problem | <a href="https://github.com/tlaplus/Examples/tree/master/specifications/SingleLaneBridge">Single Lane Bridge</a> | Younes Akhouayri |   | &#10004; | Naturals, FiniteSets, Sequences |  |
 
 ## License
 
