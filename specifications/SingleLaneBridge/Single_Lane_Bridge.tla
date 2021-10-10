@@ -1,14 +1,18 @@
--------------------------- MODULE Single_Lane_Bridge --------------------------
+-------------------------- MODULE SingleLaneBridge --------------------------
 
 \* A bridge over a river is only wide enough to permit a single lane of traffic.
 \* Consequently, cars can only move concurrently if they are moving in the same 
 \* direction. A safety violation occurs if two cars moving in different directions
 \* enter the bridge at the same time.
 \* To visualize the problem, refer to https://flylib.com/books/en/2.752.1.48/1/
-
+   
 EXTENDS Naturals, FiniteSets, Sequences
 
 CONSTANTS CarsRight, CarsLeft, Bridge, Positions 
+
+ASSUME CarsRight \cap CarsLeft = {}
+ASSUME Bridge \subseteq Positions
+ASSUME Cardinality(CarsRight \union CarsLeft ) # 0
 
 VARIABLES Location, Waiting
 vars == <<Location, Waiting>>
@@ -50,7 +54,7 @@ MoveInsideBridge(car) ==
     /\ ChangeLocation(car)
 
 EnterBridge ==
-        /\ CarsInBridge = {}
+    \/  /\ CarsInBridge = {}
         /\ Len(Waiting) # 0
         /\ Location' = [ Location EXCEPT ![Head(Waiting)] = NextLocation(Head(Waiting)) ]
         /\ Waiting' = Tail(Waiting)
@@ -75,12 +79,7 @@ Fairness ==
 
 Spec == Init /\ [][Next]_vars /\ Fairness
 
-TypeOK ==
-    /\ Location \in [ Cars -> Positions ]
-    /\ Len(Waiting) <= Cardinality(Cars)
-
 Invariants ==
-    /\ TypeOK
     \* Two cars or more cannot be in the same location in the Bridge at the same time
     /\ \A a,b \in Cars :
         /\ Location[a] \in Bridge
@@ -92,15 +91,26 @@ Invariants ==
     /\ \A <<r,l>> \in CarsRight \X CarsLeft :
         ~ (Location[r] \in Bridge /\ Location[l] \in Bridge) 
 
-THEOREM Spec => []Invariants
+TypeOK ==
+    /\ Location \in [ Cars -> Positions ]
+    /\ Len(Waiting) <= Cardinality(Cars)
 
 CarsInBridgeExitBridge ==
     \* All cars eventually exit the Bridge 
     \A car \in Cars : Location[car] \in Bridge ~> Location[car] \notin Bridge
+
 CarsEnterBridge ==
     \* All cars eventually enter the bridge
     \A car \in Cars : Location[car] \notin Bridge ~> Location[car] \in Bridge
 
+THEOREM Spec => [] Invariants
+
+THEOREM Spec => [] TypeOK
+
+THEOREM Spec => CarsInBridgeExitBridge
+THEOREM Spec => CarsEnterBridge
+
+
 =============================================================================
 \* Modification History
-\* Last modified Sat Oct 09 18:03:11 CEST 2021 by youne
+\* Last modified Sun Oct 10 22:05:04 CEST 2021 by youne
