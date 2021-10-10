@@ -1,5 +1,5 @@
 ---- MODULE MC ----
-EXTENDS Single_Lane_Bridge, TLC
+EXTENDS SingleLaneBridge, TLC
 
 \* CONSTANT definitions @modelParameterConstants:0CarsRight
 const_1615720459299211000 == 
@@ -23,4 +23,4 @@ const_1615720459299214000 ==
 
 =============================================================================
 \* Modification History
-\* Created Sun Mar 14 12:14:19 CET 2021 by oblic
+\* Last modified Sun Oct 10 22:023:42 CEST 2021 by youne
