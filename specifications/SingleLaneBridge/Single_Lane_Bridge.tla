@@ -8,24 +8,31 @@
    
 EXTENDS Naturals, FiniteSets, Sequences
 
-CONSTANTS CarsRight, CarsLeft, Bridge, Positions 
+CONSTANTS CarsRight, CarsLeft, Bridge, Positions
 
-ASSUME CarsRight \cap CarsLeft = {}
-ASSUME Bridge \subseteq Positions
-ASSUME Cardinality(CarsRight \union CarsLeft ) # 0
+VARIABLES Location, WaitingBeforeBridge
+vars == <<Location, WaitingBeforeBridge>>
 
-VARIABLES Location, Waiting
-vars == <<Location, Waiting>>
-
-Cars == CarsRight \union CarsLeft 
-
-CarsInBridge == { c \in Cars : Location[c] \in Bridge }
+StartPos == CHOOSE min \in Positions : \A p \in Positions : min <= p
+EndPos   == CHOOSE max \in Positions : \A p \in Positions : max >= p
 
 StartBridge == CHOOSE min \in Bridge : \A e \in Bridge : min <= e
 EndBridge   == CHOOSE max \in Bridge : \A e \in Bridge : max >= e
 
-StartPos == CHOOSE min \in Positions : \A p \in Positions : min <= p
-EndPos   == CHOOSE max \in Positions : \A p \in Positions : max >= p
+ASSUME CarsRight \cap CarsLeft = {}
+ASSUME Cardinality(CarsRight \union CarsLeft ) # 0
+ASSUME StartPos < StartBridge /\ EndPos > EndBridge /\ Cardinality(Bridge) < Cardinality(Positions)
+
+
+RECURSIVE SeqFromSet(_)
+SeqFromSet(S) == 
+  IF S = {} THEN << >> 
+  ELSE LET x == CHOOSE x \in S : TRUE
+       IN  << x >> \o SeqFromSet(S \ {x})
+
+Cars == CarsRight \union CarsLeft
+CarsInBridge == { c \in Cars : Location[c] \in Bridge }
+CarsBeforeBridge == { car \in CarsRight : EndPos - EndBridge = 1 } \cup { car \in CarsLeft : StartBridge - StartPos = 1 }
 
 RMove(pos) == IF pos > StartPos THEN pos - 1 ELSE EndPos
 LMove(pos) == IF pos < EndPos THEN pos + 1 ELSE StartPos
@@ -35,8 +42,8 @@ NextLocation(car) == IF car \in CarsRight THEN RMove(Location[car]) ELSE LMove(L
 ChangeLocation(car) ==
     /\ IF \/ car \in CarsRight /\ NextLocation(car) = EndBridge + 1
           \/ car \in CarsLeft /\ NextLocation(car) = StartBridge - 1
-        THEN Waiting' = Append(Waiting, car)
-        ELSE UNCHANGED Waiting
+        THEN WaitingBeforeBridge' = Append(WaitingBeforeBridge, car)
+        ELSE UNCHANGED WaitingBeforeBridge
     /\ Location' = [ Location EXCEPT ![car] = NextLocation(car) ]
 
 HaveSameDirection(car) ==
@@ -55,20 +62,19 @@ MoveInsideBridge(car) ==
 
 EnterBridge ==
     \/  /\ CarsInBridge = {}
-        /\ Len(Waiting) # 0
-        /\ Location' = [ Location EXCEPT ![Head(Waiting)] = NextLocation(Head(Waiting)) ]
-        /\ Waiting' = Tail(Waiting)
-    \/  /\ Len(Waiting) # 0
-        /\ Head(Waiting) \notin CarsInBridge
-        /\ HaveSameDirection(Head(Waiting))
-        /\ \A c \in Cars : Location[c] # NextLocation(Head(Waiting))
-        /\ Location' = [ Location EXCEPT ![Head(Waiting)] = NextLocation(Head(Waiting)) ]
-        /\ Waiting' = Tail(Waiting)
-
+        /\ Len(WaitingBeforeBridge) # 0
+        /\ Location' = [ Location EXCEPT ![Head(WaitingBeforeBridge)] = NextLocation(Head(WaitingBeforeBridge)) ]
+        /\ WaitingBeforeBridge' = Tail(WaitingBeforeBridge)
+    \/  /\ Len(WaitingBeforeBridge) # 0
+        /\ Head(WaitingBeforeBridge) \notin CarsInBridge
+        /\ HaveSameDirection(Head(WaitingBeforeBridge))
+        /\ \A c \in Cars : Location[c] # NextLocation(Head(WaitingBeforeBridge))
+        /\ Location' = [ Location EXCEPT ![Head(WaitingBeforeBridge)] = NextLocation(Head(WaitingBeforeBridge)) ]
+        /\ WaitingBeforeBridge' = Tail(WaitingBeforeBridge)
 
 Init == 
     /\ Location = [ c \in Cars |-> IF c \in CarsRight THEN EndPos ELSE StartPos  ]
-    /\ Waiting = <<>>
+    /\ WaitingBeforeBridge = SeqFromSet(CarsBeforeBridge)
 
 Next == \E car \in Cars : EnterBridge \/ MoveOutsideBridge(car) \/ MoveInsideBridge(car)
 
@@ -93,7 +99,7 @@ Invariants ==
 
 TypeOK ==
     /\ Location \in [ Cars -> Positions ]
-    /\ Len(Waiting) <= Cardinality(Cars)
+    /\ Len(WaitingBeforeBridge) <= Cardinality(Cars)
 
 CarsInBridgeExitBridge ==
     \* All cars eventually exit the Bridge 
@@ -113,4 +119,4 @@ THEOREM Spec => CarsEnterBridge
 
 =============================================================================
 \* Modification History
-\* Last modified Sun Oct 10 22:05:04 CEST 2021 by youne
+\* Last modified Tue Oct 12 00:20:28 CEST 2021 by youne
